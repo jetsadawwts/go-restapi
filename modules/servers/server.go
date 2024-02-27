@@ -18,38 +18,42 @@ type IServer interface {
 type server struct {
 	app *fiber.App
 	cfg config.IConfig
-	db *sqlx.DB
+	db  *sqlx.DB
 }
 
-func NewServer(cfg config.IConfig, db*sqlx.DB) IServer {
+func NewServer(cfg config.IConfig, db *sqlx.DB) IServer {
 	return &server{
 		cfg: cfg,
-		db: db,
+		db:  db,
 		app: fiber.New(fiber.Config{
-			AppName: cfg.App().Name(),
-			BodyLimit: cfg.App().BodyLimit(),
-			ReadTimeout: cfg.App().ReadTimeout(),
+			AppName:      cfg.App().Name(),
+			BodyLimit:    cfg.App().BodyLimit(),
+			ReadTimeout:  cfg.App().ReadTimeout(),
 			WriteTimeout: cfg.App().WriteTimeout(),
-			JSONEncoder: json.Marshal,
-			JSONDecoder: json.Unmarshal,
+			JSONEncoder:  json.Marshal,
+			JSONDecoder:  json.Unmarshal,
 		}),
 	}
 }
 
 func (s *server) Start() {
-    //Middlewares
+	//Middlewares
+	m := InitMiddlewares(s)
+	s.app.Use(m.Logger())
+	s.app.Use(m.Cors())
 
 	//Module
 	v1 := s.app.Group("v1")
 
-	modules := InitModule(v1, s)
+	modules := InitModule(v1, s, m)
 
 	modules.MonitorModule()
-	
+	s.app.Use(m.RouterCheck())
+
 	// Graceful Shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	go func ()  {
+	go func() {
 		_ = <-c
 		log.Println("server is shutting down...")
 		_ = s.app.Shutdown()
