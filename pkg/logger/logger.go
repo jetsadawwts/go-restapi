@@ -2,12 +2,12 @@ package logger
 
 import (
 	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"github.com/jetsadawwts/go-restapi/pkg/utils"
 	"log"
 	"os"
 	"strings"
 	"time"
-	"github.com/gofiber/fiber/v2"
-	"github.com/jetsadawwts/go-restapi/pkg/utils"
 )
 
 type ILogger interface {
