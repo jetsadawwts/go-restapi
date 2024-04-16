@@ -11,11 +11,15 @@ import (
 type userHandlerErrCode string
 
 const (
-	SignUpCustomerErr userHandlerErrCode = "users-001"
+	SignUpCustomerErr  userHandlerErrCode = "users-001"
+	SignInErr          userHandlerErrCode = "users-002"
+	RefreshPassportErr userHandlerErrCode = "users-003"
 )
 
 type IUsersHandler interface {
 	SignUpCustomer(c *fiber.Ctx) error
+	SignIn(c *fiber.Ctx) error
+	RefreshPassport(c *fiber.Ctx) error
 }
 
 type usersHandler struct {
@@ -76,4 +80,46 @@ func (h *usersHandler) SignUpCustomer(c *fiber.Ctx) error {
 	}
 
 	return entities.NewResponse(c).Success(fiber.StatusCreated, result).Res()
+}
+
+func (h *usersHandler) SignIn(c *fiber.Ctx) error {
+	req := new(users.UserCredential)
+	if err := c.BodyParser(req); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrBadRequest.Code,
+			string(SignInErr),
+			err.Error(),
+		).Res()
+	}
+
+	passport, err := h.usersUsecase.GetPassport(req)
+	if err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrBadRequest.Code,
+			string(SignInErr),
+			err.Error(),
+		).Res()
+	}
+	return entities.NewResponse(c).Success(fiber.StatusOK, passport).Res()
+}
+
+func (h *usersHandler) RefreshPassport(c *fiber.Ctx) error {
+	req := new(users.UserRefreshCredential)
+	if err := c.BodyParser(req); err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrBadRequest.Code,
+			string(RefreshPassportErr),
+			err.Error(),
+		).Res()
+	}
+
+	passport, err := h.usersUsecase.RefreshPassport(req)
+	if err != nil {
+		return entities.NewResponse(c).Error(
+			fiber.ErrBadRequest.Code,
+			string(RefreshPassportErr),
+			err.Error(),
+		).Res()
+	}
+	return entities.NewResponse(c).Success(fiber.StatusOK, passport).Res()
 }
