@@ -2,10 +2,17 @@ package servers
 
 import (
 	"github.com/gofiber/fiber/v2"
+
+	appinfohandlers "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoHandlers"
+	appinforepositories "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoRepositories"
+	appinfousecases "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresRepositories"
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresUsecases"
+
 	"github.com/jetsadawwts/go-restapi/modules/monitors/monitorHandlers"
+
 	"github.com/jetsadawwts/go-restapi/modules/users/usersHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/users/usersRepositories"
 	"github.com/jetsadawwts/go-restapi/modules/users/usersUsecases"
@@ -14,6 +21,7 @@ import (
 type IModuleFactory interface {
 	MonitorModule()
 	UsersModule()
+	AppinfoModule()
 }
 
 type moduleFactory struct {
@@ -38,19 +46,39 @@ func InitMiddlewares(s *server) middlewaresHandlers.IMiddlewaresHandler {
 }
 
 func (m *moduleFactory) MonitorModule() {
-	handle := monitorHandlers.MonitorHandler(m.s.cfg)
+	handler := monitorHandlers.MonitorHandler(m.s.cfg)
 
-	m.r.Get("/", handle.HealthCheck)
+	m.r.Get("/", handler.HealthCheck)
 }
 
 func (m *moduleFactory) UsersModule() {
 	respository := usersRepositories.UsersRepository(m.s.db)
 	usecase := usersUsecases.UsersUsecase(m.s.cfg, respository)
-	handle := usersHandlers.UsersHandler(m.s.cfg, usecase)
+	handler := usersHandlers.UsersHandler(m.s.cfg, usecase)
 
 	router := m.r.Group("/users")
 
-	router.Post("/signup", handle.SignUpCustomer)
-	router.Post("/signin", handle.SignIn)
-	router.Post("/refresh", handle.RefreshPassport)
+	router.Post("/signup", m.m.ApiKeyAuth(), handler.SignUpCustomer)
+	router.Post("/signup-admin", m.m.JwtAuth(), m.m.Authorize(2), handler.SignUpAdmin)
+	router.Post("/signin", m.m.ApiKeyAuth(), handler.SignIn)
+	router.Post("/refresh", m.m.ApiKeyAuth(), handler.RefreshPassport)
+	router.Post("/signout", m.m.ApiKeyAuth(), handler.SignOut)
+
+	router.Get("/admin/secret", m.m.JwtAuth(), m.m.Authorize(2), handler.GenerateAdminToken)
+	router.Get("/:user_id", m.m.JwtAuth(), m.m.ParamsCheck(), handler.GetUserProfile)
+
+}
+
+func (m *moduleFactory) AppinfoModule() {
+	respository := appinforepositories.AppinfoRepository(m.s.db)
+	usecase := appinfousecases.AppinfoUsecase(respository)
+	handler := appinfohandlers.AppinfoHandler(m.s.cfg, usecase)
+
+	router := m.r.Group("/appinfo")
+	router.Get("/apikey", m.m.JwtAuth(), m.m.Authorize(2), handler.GenerateApiKey)
+	router.Get("/categories", m.m.ApiKeyAuth(), handler.FindCategory)
+
+	router.Post("/categories", m.m.JwtAuth(), m.m.Authorize(2), handler.AddCategory)
+	router.Delete("/:category_id/categories", m.m.JwtAuth(), m.m.Authorize(2), handler.RemoveCategory)
+
 }
