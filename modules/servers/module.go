@@ -6,6 +6,8 @@ import (
 	appinfohandlers "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoHandlers"
 	appinforepositories "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoRepositories"
 	appinfousecases "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+	"github.com/jetsadawwts/go-restapi/modules/files/filesHandlers"
+	"github.com/jetsadawwts/go-restapi/modules/files/filesUsecases"
 
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresRepositories"
@@ -22,6 +24,7 @@ type IModuleFactory interface {
 	MonitorModule()
 	UsersModule()
 	AppinfoModule()
+	FilesModule()
 }
 
 type moduleFactory struct {
@@ -80,5 +83,15 @@ func (m *moduleFactory) AppinfoModule() {
 
 	router.Post("/categories", m.m.JwtAuth(), m.m.Authorize(2), handler.AddCategory)
 	router.Delete("/:category_id/categories", m.m.JwtAuth(), m.m.Authorize(2), handler.RemoveCategory)
+
+}
+
+func (m *moduleFactory) FilesModule() {
+	usecase := filesUsecases.FilesUsecase(m.s.cfg)
+	handler := filesHandlers.FilesHandler(m.s.cfg, usecase)
+	router := m.r.Group("/files")
+
+	router.Post("/upload", m.m.JwtAuth(), m.m.Authorize(2), handler.UploadFiles)
+	router.Patch("/delete", m.m.JwtAuth(), m.m.Authorize(2), handler.DeleteFiles)
 
 }

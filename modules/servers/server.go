@@ -50,13 +50,15 @@ func (s *server) Start() {
 	modules.MonitorModule()
 	modules.UsersModule()
 	modules.AppinfoModule()
+	modules.FilesModule()
+	
 	s.app.Use(m.RouterCheck())
 
 	// Graceful Shutdown
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
-		_ = <-c
+		_ = <- c
 		log.Println("server is shutting down...")
 		_ = s.app.Shutdown()
 	}()
