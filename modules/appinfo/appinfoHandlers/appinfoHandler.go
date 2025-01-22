@@ -8,6 +8,7 @@ import (
 	"github.com/jetsadawwts/go-restapi/config"
 	"github.com/jetsadawwts/go-restapi/modules/appinfo"
 	"github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+
 	"github.com/jetsadawwts/go-restapi/modules/entities"
 	"github.com/jetsadawwts/go-restapi/pkg/auth"
 )
@@ -30,10 +31,10 @@ type IAppinfoHandler interface {
 
 type appinfoHandler struct {
 	cfg            config.IConfig
-	appinfoUsecase appinfousecases.IAppinfoUsecase
+	appinfoUsecase appinfoUsecases.IAppinfoUsecase
 }
 
-func AppinfoHandler(cfg config.IConfig, appinfoUsecase appinfousecases.IAppinfoUsecase) IAppinfoHandler {
+func AppinfoHandler(cfg config.IConfig, appinfoUsecase appinfoUsecases.IAppinfoUsecase) IAppinfoHandler {
 	return &appinfoHandler{cfg: cfg, appinfoUsecase: appinfoUsecase}
 }
 

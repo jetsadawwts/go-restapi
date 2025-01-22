@@ -1,4 +1,4 @@
-package appinforepositories
+package appinfoRepositories
 
 import (
 	"context"
