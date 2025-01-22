@@ -1,4 +1,4 @@
-package appinfousecases
+package appinfoUsecases
 
 import (
 	"github.com/jetsadawwts/go-restapi/modules/appinfo"
@@ -12,10 +12,10 @@ type IAppinfoUsecase interface {
 }
 
 type appinfoUsecase struct {
-	appinfoRepository appinforepositories.IAppinfoRepository
+	appinfoRepository appinfoRepositories.IAppinfoRepository
 }
 
-func AppinfoUsecase(appinfoRepository appinforepositories.IAppinfoRepository) IAppinfoUsecase {
+func AppinfoUsecase(appinfoRepository appinfoRepositories.IAppinfoRepository) IAppinfoUsecase {
 	return &appinfoUsecase{appinfoRepository: appinfoRepository}
 }
 

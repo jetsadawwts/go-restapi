@@ -4,10 +4,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	appinfohandlers "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoHandlers"
-	appinforepositories "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoRepositories"
-	appinfousecases "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+	"github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoRepositories"
+	"github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+
 	"github.com/jetsadawwts/go-restapi/modules/files/filesHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/files/filesUsecases"
+
+	"github.com/jetsadawwts/go-restapi/modules/products/productsHandlers"
+	"github.com/jetsadawwts/go-restapi/modules/products/productsRepositories"
+	"github.com/jetsadawwts/go-restapi/modules/products/productsUsecases"
 
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/middlewares/middlewaresRepositories"
@@ -25,6 +30,7 @@ type IModuleFactory interface {
 	UsersModule()
 	AppinfoModule()
 	FilesModule()
+	ProductsModule()
 }
 
 type moduleFactory struct {
@@ -73,8 +79,8 @@ func (m *moduleFactory) UsersModule() {
 }
 
 func (m *moduleFactory) AppinfoModule() {
-	respository := appinforepositories.AppinfoRepository(m.s.db)
-	usecase := appinfousecases.AppinfoUsecase(respository)
+	respository := appinfoRepositories.AppinfoRepository(m.s.db)
+	usecase := appinfoUsecases.AppinfoUsecase(respository)
 	handler := appinfohandlers.AppinfoHandler(m.s.cfg, usecase)
 
 	router := m.r.Group("/appinfo")
@@ -93,5 +99,22 @@ func (m *moduleFactory) FilesModule() {
 
 	router.Post("/upload", m.m.JwtAuth(), m.m.Authorize(2), handler.UploadFiles)
 	router.Patch("/delete", m.m.JwtAuth(), m.m.Authorize(2), handler.DeleteFiles)
+
+}
+
+func (m *moduleFactory) ProductsModule() {
+	filesUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+
+	productsRespository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, filesUsecase)
+	productsUsecase := productsUsecases.ProductsUsecase(productsRespository)
+	productsHandler := productsHandlers.ProductsHandler(m.s.cfg, productsUsecase, filesUsecase)
+
+	router := m.r.Group("/products")
+
+	router.Get("/", m.m.ApiKeyAuth(), productsHandler.FindProduct)
+	router.Get("/:product_id", m.m.ApiKeyAuth(), productsHandler.FindOneProduct)
+	router.Post("/", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.AddProduct)
+	router.Patch("/:product_id", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.UpdateProduct)
+	router.Delete("/:product_id", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.DeleteProduct)
 
 }
