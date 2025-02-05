@@ -6,6 +6,9 @@ import (
 	appinfohandlers "github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoRepositories"
 	"github.com/jetsadawwts/go-restapi/modules/appinfo/appinfoUsecases"
+	"github.com/jetsadawwts/go-restapi/modules/orders/ordersHandlers"
+	"github.com/jetsadawwts/go-restapi/modules/orders/ordersRepositories"
+	"github.com/jetsadawwts/go-restapi/modules/orders/ordersUsecases"
 
 	"github.com/jetsadawwts/go-restapi/modules/files/filesHandlers"
 	"github.com/jetsadawwts/go-restapi/modules/files/filesUsecases"
@@ -31,6 +34,7 @@ type IModuleFactory interface {
 	AppinfoModule()
 	FilesModule()
 	ProductsModule()
+	OrdersModule()
 }
 
 type moduleFactory struct {
@@ -110,11 +114,27 @@ func (m *moduleFactory) ProductsModule() {
 	productsHandler := productsHandlers.ProductsHandler(m.s.cfg, productsUsecase, filesUsecase)
 
 	router := m.r.Group("/products")
-
+	
 	router.Get("/", m.m.ApiKeyAuth(), productsHandler.FindProduct)
 	router.Get("/:product_id", m.m.ApiKeyAuth(), productsHandler.FindOneProduct)
 	router.Post("/", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.AddProduct)
 	router.Patch("/:product_id", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.UpdateProduct)
 	router.Delete("/:product_id", m.m.JwtAuth(), m.m.Authorize(2), productsHandler.DeleteProduct)
+
+}
+
+func (m *moduleFactory) OrdersModule() {
+	filesUsecase := filesUsecases.FilesUsecase(m.s.cfg)
+	productsRepository := productsRepositories.ProductsRepository(m.s.db, m.s.cfg, filesUsecase)
+	ordersRepository := ordersRepositories.OrdersRepository(m.s.db)
+	ordersUsecase := ordersUsecases.OrdersUsecase(ordersRepository, productsRepository)
+	ordersHandler := ordersHandlers.OrdersHandler(m.s.cfg, ordersUsecase)
+
+	router := m.r.Group("/orders")
+
+	router.Get("/:user_id/:order_id", m.m.JwtAuth(), m.m.ParamsCheck(), ordersHandler.FindOneOrder)
+	router.Get("/", m.m.JwtAuth(), m.m.Authorize(2), ordersHandler.FindOrder)
+	router.Post("/", m.m.JwtAuth(), ordersHandler.InsertOrder)
+	router.Patch("/:user_id/:order_id", m.m.JwtAuth(), m.m.ParamsCheck(), ordersHandler.UpdateOrder)
 
 }
