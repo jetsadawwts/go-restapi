@@ -17,6 +17,7 @@ func envPath() string {
 }
 
 func main() {
+
 	cfg := config.LoadConfig(envPath())
 
 	db := databases.DbConnect(cfg.Db())

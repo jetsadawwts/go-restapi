@@ -6,7 +6,7 @@ import (
 	"math"
 	"strconv"
 	"time"
-	
+
 	"github.com/joho/godotenv"
 )
 
