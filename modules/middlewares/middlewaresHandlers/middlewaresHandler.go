@@ -1,10 +1,12 @@
 package middlewaresHandlers
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jetsadawwts/go-restapi/config"
 	"github.com/jetsadawwts/go-restapi/modules/entities"
@@ -31,6 +33,7 @@ type IMiddlewaresHandler interface {
 	ParamsCheck() fiber.Handler
 	Authorize(expectRoleId ...int) fiber.Handler
 	ApiKeyAuth() fiber.Handler
+	StreamingFile() fiber.Handler
 }
 
 type middlewaresHandler struct {
@@ -174,4 +177,10 @@ func (h *middlewaresHandler) ApiKeyAuth() fiber.Handler {
 		}
 		return c.Next()
 	}
+}
+
+func (h *middlewaresHandler) StreamingFile() fiber.Handler {
+	return filesystem.New(filesystem.Config{
+		Root: http.Dir("./assets/images"),
+	})
 }

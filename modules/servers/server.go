@@ -41,6 +41,7 @@ func (s *server) Start() {
 	m := InitMiddlewares(s)
 	s.app.Use(m.Logger())
 	s.app.Use(m.Cors())
+	s.app.Use(m.StreamingFile())
 
 	//Module
 	v1 := s.app.Group("v1")

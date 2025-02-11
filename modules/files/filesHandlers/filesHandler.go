@@ -21,20 +21,19 @@ const (
 	deleteErr filesHandlersErrCode = "files-002"
 )
 
-
 type IFilesHandler interface {
 	UploadFiles(c *fiber.Ctx) error
 	DeleteFiles(c *fiber.Ctx) error
 }
 
 type filesHandler struct {
-	cfg config.IConfig
+	cfg          config.IConfig
 	filesUsecase filesUsecases.IFilesUsecase
 }
 
 func FilesHandler(cfg config.IConfig, filesUsecase filesUsecases.IFilesUsecase) IFilesHandler {
 	return &filesHandler{
-		cfg: cfg,
+		cfg:          cfg,
 		filesUsecase: filesUsecase,
 	}
 }
@@ -56,13 +55,13 @@ func (h *filesHandler) UploadFiles(c *fiber.Ctx) error {
 
 	//Files ext validation
 	extMap := map[string]string{
-		"png": "png",
-		"jpg": "jpg",
+		"png":  "png",
+		"jpg":  "jpg",
 		"jpeg": "jpeg",
 	}
 
 	for _, file := range filesReq {
-		ext := strings.TrimPrefix(filepath.Ext(file.Filename),".")
+		ext := strings.TrimPrefix(filepath.Ext(file.Filename), ".")
 		if extMap[ext] != ext || extMap[ext] == "" {
 			return entities.NewResponse(c).Error(
 				fiber.ErrBadGateway.Code,
@@ -70,7 +69,7 @@ func (h *filesHandler) UploadFiles(c *fiber.Ctx) error {
 				"extension is not acceptable.",
 			).Res()
 		}
-		
+
 		if file.Size > int64(h.cfg.App().FileLimit()) {
 			return entities.NewResponse(c).Error(
 				fiber.ErrBadGateway.Code,
@@ -82,16 +81,15 @@ func (h *filesHandler) UploadFiles(c *fiber.Ctx) error {
 		filename := utils.RandFileName(ext)
 
 		req = append(req, &files.FileReq{
-			File: file,
+			File:        file,
 			Destination: destination + "/" + filename,
-			FileName: filename,
-			Extension: ext,
+			FileName:    filename,
+			Extension:   ext,
 		})
-
 	}
 
+	// If you want to upload files to your computer please use this function below instead
 	res, err := h.filesUsecase.UploadToGCP(req)
-
 	if err != nil {
 		return entities.NewResponse(c).Error(
 			fiber.ErrInternalServerError.Code,
@@ -100,9 +98,17 @@ func (h *filesHandler) UploadFiles(c *fiber.Ctx) error {
 		).Res()
 	}
 
+	// res, err := h.filesUsecase.UploadToStorage(req)
+	// if err != nil {
+	// 	return entities.NewResponse(c).Error(
+	// 		fiber.ErrInternalServerError.Code,
+	// 		string(uploadErr),
+	// 		err.Error(),
+	// 	).Res()
+	// }
+
 	return entities.NewResponse(c).Success(fiber.StatusCreated, res).Res()
 }
-
 
 func (h *filesHandler) DeleteFiles(c *fiber.Ctx) error {
 	req := make([]*files.DeleteFileReq, 0)
@@ -114,6 +120,7 @@ func (h *filesHandler) DeleteFiles(c *fiber.Ctx) error {
 		).Res()
 	}
 
+	// If you want to upload files to your computer please use this function below instead
 	if err := h.filesUsecase.DeleteFileOnGCP(req); err != nil {
 		return entities.NewResponse(c).Error(
 			fiber.ErrInternalServerError.Code,
@@ -121,6 +128,14 @@ func (h *filesHandler) DeleteFiles(c *fiber.Ctx) error {
 			err.Error(),
 		).Res()
 	}
+
+	// if err := h.filesUsecase.DeleteFileOnStorage(req); err != nil {
+	// 	return entities.NewResponse(c).Error(
+	// 		fiber.ErrInternalServerError.Code,
+	// 		string(deleteErr),
+	// 		err.Error(),
+	// 	).Res()
+	// }
 
 	return entities.NewResponse(c).Success(fiber.StatusOK, nil).Res()
 }
